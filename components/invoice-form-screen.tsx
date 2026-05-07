@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PROVIDERS = ['IMISA', 'REFAX', 'MANNHHEIM', 'AUTOMARCO', 'NORIEGA', 'CUATRO RUEDAS'];
 
@@ -19,6 +20,42 @@ export function InvoiceFormScreen() {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [comment, setComment] = useState('');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [hasAttachedPhoto, setHasAttachedPhoto] = useState(false);
+
+  const handleCameraPress = () => {
+    setHasAttachedPhoto(true);
+    Alert.alert('Fotografia adjunta', 'La fotografia fue marcada como adjunta para esta factura.');
+  };
+
+  const handleSubmit = () => {
+    const missingFields: string[] = [];
+
+    if (!hasAttachedPhoto) {
+      missingFields.push('Debes adjuntar o tomar una fotografia.');
+    }
+
+    if (!selectedProvider) {
+      missingFields.push('Debes seleccionar un proveedor.');
+    }
+
+    if (!invoiceNumber.trim()) {
+      missingFields.push('Debes ingresar un numero de factura.');
+    }
+
+    if (!comment.trim()) {
+      missingFields.push('Debes ingresar un comentario.');
+    }
+
+    if (missingFields.length > 0) {
+      Alert.alert(
+        'Faltan datos',
+        missingFields.map((field, index) => `${index + 1}. ${field}`).join('\n')
+      );
+      return;
+    }
+
+    Alert.alert('Factura lista', 'Todos los campos obligatorios fueron completados.');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -32,9 +69,12 @@ export function InvoiceFormScreen() {
           contentFit="contain"
         />
 
-        <Pressable style={styles.cameraButton}>
+        <Pressable style={styles.cameraButton} onPress={handleCameraPress}>
           <Ionicons name="camera" size={44} color="#FFFFFF" />
         </Pressable>
+        <Text style={styles.photoStatus}>
+          {hasAttachedPhoto ? 'Fotografia adjunta' : 'Aun no se ha adjuntado fotografia'}
+        </Text>
 
         <View style={styles.formSection}>
           <View style={styles.inlineField}>
@@ -72,7 +112,7 @@ export function InvoiceFormScreen() {
           </View>
         </View>
 
-        <Pressable style={styles.submitButton}>
+        <Pressable style={styles.submitButton} onPress={handleSubmit}>
           <Ionicons name="mail-outline" size={30} color="#FFFFFF" />
           <Text style={styles.submitText}>Enviar factura</Text>
         </Pressable>
@@ -111,27 +151,34 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 32,
+    paddingTop: 18,
+    paddingBottom: 15,
   },
   logo: {
     width: '100%',
     height: 90,
     alignSelf: 'center',
-    marginBottom: 56,
+    marginBottom: 30,
   },
   cameraButton: {
-    width: 136,
-    height: 136,
+    width: 90,
+    height: 90,
     borderRadius: 68,
     backgroundColor: '#4A7DF0',
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 64,
+    marginBottom: 10,
+  },
+  photoStatus: {
+    marginBottom: 56,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4B5563',
   },
   formSection: {
-    gap: 30,
+    gap: 25,
   },
   inlineField: {
     flexDirection: 'row',
@@ -139,19 +186,19 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   inlineLabel: {
-    width: 140,
+    width: 130,
     fontSize: 18,
     fontWeight: '700',
     color: '#1F2937',
   },
   inputBox: {
     flex: 1,
-    minHeight: 64,
+    minHeight: 40,
     borderWidth: 2,
     borderColor: '#D35A5A',
-    borderRadius: 22,
+    borderRadius: 15,
     paddingHorizontal: 26,
-    fontSize: 17,
+    fontSize: 15,
     color: '#374151',
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
@@ -159,7 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   inputText: {
-    fontSize: 17,
+    fontSize: 15,
     color: '#374151',
   },
   placeholderText: {
@@ -175,20 +222,20 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   commentInput: {
-    minHeight: 220,
+    minHeight: 120,
     borderWidth: 2,
     borderColor: '#D35A5A',
-    borderRadius: 22,
+    borderRadius: 15,
     paddingHorizontal: 26,
     paddingVertical: 22,
     fontSize: 17,
     color: '#374151',
   },
   submitButton: {
-    minHeight: 78,
+    minHeight: 68,
     marginTop: 'auto',
-    marginBottom: 24,
-    borderRadius: 28,
+    marginBottom: 4,
+    borderRadius: 15,
     backgroundColor: '#4A7DF0',
     alignItems: 'center',
     justifyContent: 'center',
@@ -208,7 +255,7 @@ const styles = StyleSheet.create({
   },
   dropdownModal: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 15,
     paddingVertical: 12,
   },
   dropdownItem: {
