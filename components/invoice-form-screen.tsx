@@ -14,8 +14,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { sendInvoiceEmail } from '../services/sendInvoiceEmail';
 
 const PROVIDERS = ['IMISA', 'REFAX', 'MANNHHEIM', 'AUTOMARCO', 'NORIEGA', 'CUATRO RUEDAS'];
+
+const API_URL = 'https://repnetfacturas-backend.onrender.com/';
 
 export function InvoiceFormScreen() {
   const [selectedProvider, setSelectedProvider] = useState('');
@@ -25,6 +28,7 @@ export function InvoiceFormScreen() {
   const [attachedPhotoUri, setAttachedPhotoUri] = useState<string | null>(null);
   const [previewPhotoUri, setPreviewPhotoUri] = useState<string | null>(null);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const handleCameraPress = async () => {
     try {
@@ -32,7 +36,7 @@ export function InvoiceFormScreen() {
         'react-native-document-scanner-plugin'
       );
 
-      const { scannedImages } = await DocumentScanner.scanDocument({
+      const { scannedImages = [] } = await DocumentScanner.scanDocument({
         maxNumDocuments: 1,
         croppedImageQuality: 100,
         responseType: ResponseType.ImageFilePath,
@@ -73,35 +77,61 @@ export function InvoiceFormScreen() {
     setPreviewPhotoUri(null);
   };
 
-  const handleSubmit = () => {
-    const missingFields: string[] = [];
+const handleSubmit = async () => {
+  const missingFields: string[] = [];
 
-    if (!attachedPhotoUri) {
-      missingFields.push('Debes adjuntar o tomar una fotografia.');
-    }
+  if (!attachedPhotoUri) {
+    missingFields.push('Debes adjuntar o tomar una fotografia.');
+  }
 
-    if (!selectedProvider) {
-      missingFields.push('Debes seleccionar un proveedor.');
-    }
+  if (!selectedProvider) {
+    missingFields.push('Debes seleccionar un proveedor.');
+  }
 
-    if (!invoiceNumber.trim()) {
-      missingFields.push('Debes ingresar un numero de factura.');
-    }
+  if (!invoiceNumber.trim()) {
+    missingFields.push('Debes ingresar un numero de factura.');
+  }
 
-    if (!comment.trim()) {
-      missingFields.push('Debes ingresar un comentario.');
-    }
+  if (!comment.trim()) {
+    missingFields.push('Debes ingresar un comentario.');
+  }
 
-    if (missingFields.length > 0) {
-      Alert.alert(
-        'Faltan datos',
-        missingFields.map((field, index) => `${index + 1}. ${field}`).join('\n')
-      );
-      return;
-    }
+  if (missingFields.length > 0) {
+    Alert.alert(
+      'Faltan datos',
+      missingFields.map((field, index) => `${index + 1}. ${field}`).join('\n')
+    );
+    return;
+  }
 
-    Alert.alert('Factura lista', 'Todos los campos obligatorios fueron completados.');
-  };
+  try {
+    setIsSending(true);
+
+    await sendInvoiceEmail({
+      imageUri: attachedPhotoUri!,
+      provider: selectedProvider,
+      invoiceNumber,
+      comment,
+      apiUrl: API_URL,
+    });
+
+    Alert.alert('Factura enviada', 'La factura fue enviada correctamente por correo.');
+
+    setAttachedPhotoUri(null);
+    setSelectedProvider('');
+    setInvoiceNumber('');
+    setComment('');
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'No fue posible enviar la factura por correo.';
+
+    Alert.alert('Error al enviar factura', message);
+  } finally {
+    setIsSending(false);
+  }
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -179,10 +209,16 @@ export function InvoiceFormScreen() {
             </View>
           </View>
 
-          <Pressable style={styles.submitButton} onPress={handleSubmit}>
-            <Ionicons name="mail-outline" size={30} color="#FFFFFF" />
-            <Text style={styles.submitText}>Enviar factura</Text>
-          </Pressable>
+        <Pressable
+          style={[styles.submitButton, isSending && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSending}>
+          <Ionicons name="mail-outline" size={30} color="#FFFFFF" />
+          <Text style={styles.submitText}>
+            {isSending ? 'Enviando factura...' : 'Enviar factura'}
+          </Text>
+        </Pressable>
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -391,6 +427,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 14,
   },
+  submitButtonDisabled: {
+  opacity: 0.65,
+},
   submitText: {
     fontSize: 20,
     fontWeight: '700',
