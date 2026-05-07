@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Necesitamos acceso a la camara para escanear facturas."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,6 +21,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "CAMERA"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -27,6 +33,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "react-native-document-scanner-plugin",
+        {
+          "cameraPermission": "Necesitamos acceso a la camara para escanear facturas."
+        }
+      ],
       [
         "expo-splash-screen",
         {

@@ -20,17 +20,60 @@ export function InvoiceFormScreen() {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [comment, setComment] = useState('');
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
-  const [hasAttachedPhoto, setHasAttachedPhoto] = useState(false);
+  const [attachedPhotoUri, setAttachedPhotoUri] = useState<string | null>(null);
+  const [previewPhotoUri, setPreviewPhotoUri] = useState<string | null>(null);
 
-  const handleCameraPress = () => {
-    setHasAttachedPhoto(true);
-    Alert.alert('Fotografia adjunta', 'La fotografia fue marcada como adjunta para esta factura.');
+  const handleCameraPress = async () => {
+    try {
+      const { default: DocumentScanner, ResponseType } = await import(
+        'react-native-document-scanner-plugin'
+      );
+
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        maxNumDocuments: 1,
+        croppedImageQuality: 100,
+        responseType: ResponseType.ImageFilePath,
+      });
+
+      if (scannedImages.length > 0) {
+        setPreviewPhotoUri(scannedImages[0]);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'No fue posible abrir el escaner de documentos.';
+
+      if (message.includes('could not be found') || message.includes('TurboModuleRegistry')) {
+        Alert.alert(
+          'Development build requerida',
+          'Para usar el escaner de facturas necesitas generar e instalar una development build con el modulo nativo incluido.'
+        );
+        return;
+      }
+
+      Alert.alert(
+        'Escaner no disponible',
+        `${message}\n\nSi aun no has generado tu development build, este modulo nativo no estara disponible dentro de Expo Go.`
+      );
+    }
+  };
+
+  const handleAcceptPreview = () => {
+    if (!previewPhotoUri) {
+      return;
+    }
+
+    setAttachedPhotoUri(previewPhotoUri);
+    setPreviewPhotoUri(null);
+  };
+
+  const handleBackToForm = () => {
+    setPreviewPhotoUri(null);
   };
 
   const handleSubmit = () => {
     const missingFields: string[] = [];
 
-    if (!hasAttachedPhoto) {
+    if (!attachedPhotoUri) {
       missingFields.push('Debes adjuntar o tomar una fotografia.');
     }
 
@@ -73,8 +116,11 @@ export function InvoiceFormScreen() {
           <Ionicons name="camera" size={44} color="#FFFFFF" />
         </Pressable>
         <Text style={styles.photoStatus}>
-          {hasAttachedPhoto ? 'Fotografia adjunta' : 'Aun no se ha adjuntado fotografia'}
+          {attachedPhotoUri ? 'Fotografia adjunta' : 'Aun no se ha adjuntado fotografia'}
         </Text>
+        {attachedPhotoUri ? (
+          <Image source={{ uri: attachedPhotoUri }} style={styles.documentPreview} contentFit="cover" />
+        ) : null}
 
         <View style={styles.formSection}>
           <View style={styles.inlineField}>
@@ -139,6 +185,39 @@ export function InvoiceFormScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal
+        animationType="slide"
+        visible={!!previewPhotoUri}
+        onRequestClose={handleBackToForm}>
+        <SafeAreaView style={styles.previewSafeArea}>
+          <View style={styles.previewHeader}>
+            <Text style={styles.previewTitle}>Vista previa del escaneo</Text>
+            <Text style={styles.previewSubtitle}>
+              Revisa la factura escaneada antes de adjuntarla.
+            </Text>
+          </View>
+
+          <View style={styles.previewImageWrapper}>
+            {previewPhotoUri ? (
+              <Image
+                source={{ uri: previewPhotoUri }}
+                style={styles.previewImage}
+                contentFit="contain"
+              />
+            ) : null}
+          </View>
+
+          <View style={styles.previewActions}>
+            <Pressable style={styles.previewSecondaryButton} onPress={handleBackToForm}>
+              <Text style={styles.previewSecondaryButtonText}>Volver</Text>
+            </Pressable>
+            <Pressable style={styles.previewPrimaryButton} onPress={handleAcceptPreview}>
+              <Text style={styles.previewPrimaryButtonText}>Aceptar</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -171,11 +250,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   photoStatus: {
-    marginBottom: 56,
+    marginBottom: 14,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
     color: '#4B5563',
+  },
+  documentPreview: {
+    width: 120,
+    height: 160,
+    alignSelf: 'center',
+    borderRadius: 12,
+    marginBottom: 42,
+    backgroundColor: '#E5E7EB',
   },
   formSection: {
     gap: 25,
@@ -265,5 +352,71 @@ const styles = StyleSheet.create({
   dropdownItemText: {
     fontSize: 17,
     color: '#1F2937',
+  },
+  previewSafeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  previewHeader: {
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  previewTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  previewSubtitle: {
+    marginTop: 8,
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  previewImageWrapper: {
+    flex: 1,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    overflow: 'hidden',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  previewActions: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 20,
+  },
+  previewSecondaryButton: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#D35A5A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  previewSecondaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#D35A5A',
+  },
+  previewPrimaryButton: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4A7DF0',
+  },
+  previewPrimaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
