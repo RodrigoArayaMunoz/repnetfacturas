@@ -1,5 +1,5 @@
 import { InvoiceFormScreen } from '@/components/invoice-form-screen';
 
-export default function ModalScreen() {
+export default function IndexScreen() {
   return <InvoiceFormScreen />;
 }
