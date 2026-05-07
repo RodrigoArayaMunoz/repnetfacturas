@@ -18,7 +18,7 @@ import { sendInvoiceEmail } from '../services/sendInvoiceEmail';
 
 const PROVIDERS = ['IMISA', 'REFAX', 'MANNHHEIM', 'AUTOMARCO', 'NORIEGA', 'CUATRO RUEDAS'];
 
-const API_URL = 'https://repnetfacturas-backend.onrender.com/';
+const API_URL = 'https://repnetfacturas-backend.onrender.com';
 
 export function InvoiceFormScreen() {
   const [selectedProvider, setSelectedProvider] = useState('');
