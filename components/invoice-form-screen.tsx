@@ -3,7 +3,9 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +24,7 @@ export function InvoiceFormScreen() {
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [attachedPhotoUri, setAttachedPhotoUri] = useState<string | null>(null);
   const [previewPhotoUri, setPreviewPhotoUri] = useState<string | null>(null);
+  const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
 
   const handleCameraPress = async () => {
     try {
@@ -102,67 +105,86 @@ export function InvoiceFormScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <Image
-          source={require('@/assets/images/repnetsolo_logo.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          showsVerticalScrollIndicator={false}>
+          <Image
+            source={require('@/assets/images/repnetsolo_logo.png')}
+            style={styles.logo}
+            contentFit="contain"
+          />
 
-        <Pressable style={styles.cameraButton} onPress={handleCameraPress}>
-          <Ionicons name="camera" size={44} color="#FFFFFF" />
-        </Pressable>
-        <Text style={styles.photoStatus}>
-          {attachedPhotoUri ? 'Fotografia adjunta' : 'Aun no se ha adjuntado fotografia'}
-        </Text>
-        {attachedPhotoUri ? (
-          <Image source={{ uri: attachedPhotoUri }} style={styles.documentPreview} contentFit="cover" />
-        ) : null}
-
-        <View style={styles.formSection}>
-          <View style={styles.inlineField}>
-            <Text style={styles.inlineLabel}>Proveedor:</Text>
-            <Pressable style={styles.inputBox} onPress={() => setIsDropdownVisible(true)}>
-              <Text style={[styles.inputText, !selectedProvider && styles.placeholderText]}>
-                {selectedProvider || 'Seleccionar'}
+          <View style={styles.captureRow}>
+            <View style={styles.captureColumn}>
+              <Pressable style={styles.cameraButton} onPress={handleCameraPress}>
+                <Ionicons name="camera" size={44} color="#FFFFFF" />
+              </Pressable>
+              <Text style={styles.photoStatus}>
+                {attachedPhotoUri ? '' : 'Aun no se ha adjuntado fotografia'}
               </Text>
-              <Ionicons name="chevron-down" size={28} color="#4B5563" />
-            </Pressable>
+            </View>
+
+            {attachedPhotoUri ? (
+              <Pressable
+                style={styles.documentPreviewButton}
+                onPress={() => setIsImageViewerVisible(true)}>
+                <Image
+                  source={{ uri: attachedPhotoUri }}
+                  style={styles.documentPreview}
+                  contentFit="cover"
+                />
+              </Pressable>
+            ) : null}
           </View>
 
-          <View style={styles.inlineField}>
-            <Text style={styles.inlineLabel}>Numero Factura:</Text>
-            <TextInput
-              value={invoiceNumber}
-              onChangeText={setInvoiceNumber}
-              placeholder="Ingresar numero"
-              placeholderTextColor="#6B7280"
-              style={styles.inputBox}
-            />
+          <View style={styles.formSection}>
+            <View style={styles.inlineField}>
+              <Text style={styles.inlineLabel}>Proveedor:</Text>
+              <Pressable style={styles.inputBox} onPress={() => setIsDropdownVisible(true)}>
+                <Text style={[styles.inputText, !selectedProvider && styles.placeholderText]}>
+                  {selectedProvider || 'Seleccionar'}
+                </Text>
+                <Ionicons name="chevron-down" size={28} color="#4B5563" />
+              </Pressable>
+            </View>
+
+            <View style={styles.inlineField}>
+              <Text style={styles.inlineLabel}>Numero Factura:</Text>
+              <TextInput
+                value={invoiceNumber}
+                onChangeText={setInvoiceNumber}
+                placeholder="Ingresar numero"
+                placeholderTextColor="#6B7280"
+                style={styles.inputBox}
+              />
+            </View>
+
+            <View style={styles.commentField}>
+              <Text style={styles.commentLabel}>Comentario:</Text>
+              <TextInput
+                value={comment}
+                onChangeText={setComment}
+                placeholder="Escribe un comentario"
+                placeholderTextColor="#6B7280"
+                multiline
+                textAlignVertical="top"
+                style={styles.commentInput}
+              />
+            </View>
           </View>
 
-          <View style={styles.commentField}>
-            <Text style={styles.commentLabel}>Comentario:</Text>
-            <TextInput
-              value={comment}
-              onChangeText={setComment}
-              placeholder="Escribe un comentario"
-              placeholderTextColor="#6B7280"
-              multiline
-              textAlignVertical="top"
-              style={styles.commentInput}
-            />
-          </View>
-        </View>
-
-        <Pressable style={styles.submitButton} onPress={handleSubmit}>
-          <Ionicons name="mail-outline" size={30} color="#FFFFFF" />
-          <Text style={styles.submitText}>Enviar factura</Text>
-        </Pressable>
-      </ScrollView>
+          <Pressable style={styles.submitButton} onPress={handleSubmit}>
+            <Ionicons name="mail-outline" size={30} color="#FFFFFF" />
+            <Text style={styles.submitText}>Enviar factura</Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal
         animationType="fade"
@@ -218,6 +240,30 @@ export function InvoiceFormScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isImageViewerVisible}
+        onRequestClose={() => setIsImageViewerVisible(false)}>
+        <View style={styles.viewerOverlay}>
+          <SafeAreaView style={styles.viewerSafeArea}>
+            <Pressable style={styles.viewerCloseButton} onPress={() => setIsImageViewerVisible(false)}>
+              <Ionicons name="close" size={28} color="#FFFFFF" />
+            </Pressable>
+
+            <View style={styles.viewerImageWrapper}>
+              {attachedPhotoUri ? (
+                <Image
+                  source={{ uri: attachedPhotoUri }}
+                  style={styles.viewerImage}
+                  contentFit="contain"
+                />
+              ) : null}
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -227,17 +273,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  keyboardContainer: {
+    flex: 1,
+  },
   content: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 18,
-    paddingBottom: 15,
+    paddingBottom: 48,
   },
   logo: {
     width: '100%',
     height: 90,
     alignSelf: 'center',
     marginBottom: 30,
+  },
+  captureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 18,
+    marginBottom: 42,
+  },
+  captureColumn: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cameraButton: {
     width: 90,
@@ -250,18 +310,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   photoStatus: {
-    marginBottom: 14,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
     color: '#4B5563',
+    maxWidth: 120,
+  },
+  documentPreviewButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   documentPreview: {
-    width: 120,
-    height: 160,
-    alignSelf: 'center',
+    width: 86,
+    height: 118,
     borderRadius: 12,
-    marginBottom: 42,
     backgroundColor: '#E5E7EB',
   },
   formSection: {
@@ -418,5 +480,34 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  viewerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(17, 24, 39, 0.92)',
+  },
+  viewerSafeArea: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  viewerCloseButton: {
+    alignSelf: 'flex-end',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  viewerImageWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewerImage: {
+    width: '100%',
+    height: '100%',
   },
 });

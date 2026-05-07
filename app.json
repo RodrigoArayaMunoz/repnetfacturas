@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Necesitamos acceso a la camara para escanear facturas."
-      }
+        "NSCameraUsageDescription": "Necesitamos acceso a la camara para escanear facturas.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.rodrigoarayamunoz.repnetfacturas"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,8 +26,10 @@
       "permissions": [
         "CAMERA"
       ],
+      "softwareKeyboardLayoutMode": "pan",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rodrigoarayamunoz.repnetfacturas"
     },
     "web": {
       "output": "static",
@@ -50,11 +54,18 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-mail-composer"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4e03b7b6-aaf9-4946-8ec1-a39cdd745334"
+      }
     }
   }
 }
